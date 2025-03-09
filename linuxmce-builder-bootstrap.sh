@@ -110,6 +110,7 @@ RUN apt-get update && apt-get -y dist-upgrade && \
     joe \
     g++ \
     ccache \
+    lsb-release \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
