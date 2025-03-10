@@ -71,7 +71,7 @@ print_info "Added $USER to the docker group. You may need to log out and back in
 print_info "Setting up project structure..."
 
 # Create required directories
-mkdir -p $PROJECT_DIR/{output,configs,source,mysql}
+mkdir -p $PROJECT_DIR/{output,configs,source,mysql,lmce-build}
 
 # Create Dockerfile
 print_info "Creating Dockerfile..."
@@ -127,6 +127,12 @@ WORKDIR /root
 # Skip for now because its in master
 #RUN git clone https://git.linuxmce.org/linuxmce/buildscripts.git Ubuntu_Helpers_NoHardcode
 
+# Define volume for build outputs
+VOLUME ["/usr/local/lmce-build/output"]
+
+RUN mkdir -p /etc/lmce-build
+RUN ls -lha /etc/lmce-build
+
 RUN git clone https://github.com/Langstonius/LinuxMCE.git
 # Set up build configuration
 COPY configs/builder.custom.conf /root/LinuxMCE/src/Ubuntu_Helpers_NoHardcode/conf-files/ubuntu-amd64/
@@ -137,9 +143,6 @@ RUN ./install.sh
 
 # Set up build environment
 WORKDIR /usr/local/lmce-build
-
-# Define volume for build outputs
-VOLUME ["/usr/local/lmce-build/output"]
 
 # Define entrypoint for running builds
 COPY entrypoint.sh /entrypoint.sh
@@ -245,6 +248,8 @@ services:
       - ./source:/usr/local/lmce-build/source:ro
       # Optional: Mount custom configuration
       - ./configs:/usr/local/lmce-build/configs:ro
+      # Required to save or inject key
+      - ${PWD}/lmce-build:/etc/lmce-build
     environment:
       # Example environment variables that can be used to configure the build
       - BUILD_TYPE=release
