@@ -123,9 +123,10 @@ RUN mkdir -p /var/run/mysqld && \
 # Set up working directory
 WORKDIR /root
 
-# Clone build scripts
-# Skip for now because its in master
-#RUN git clone https://git.linuxmce.org/linuxmce/buildscripts.git Ubuntu_Helpers_NoHardcode
+# Clone No Hard Code Git 
+RUN git clone https://github.com/Langstonius/Ubuntu_Helpers_NoHardcode.git
+
+RUN ln -s /root/Ubuntu_Helpers_NoHardcode /root/buildscripts
 
 # Define volume for build outputs
 VOLUME ["/usr/local/lmce-build/output"]
@@ -135,10 +136,11 @@ RUN ls -lha /etc/lmce-build
 
 RUN git clone https://github.com/Langstonius/LinuxMCE.git
 # Set up build configuration
-COPY configs/builder.custom.conf /root/LinuxMCE/src/Ubuntu_Helpers_NoHardcode/conf-files/ubuntu-amd64/
+COPY configs/builder.custom.conf /root/buildscripts/conf-files/ubuntu-amd64/
 
 # Install build helpers
-WORKDIR /root/LinuxMCE/src/Ubuntu_Helpers_NoHardcode
+WORKDIR /root/buildscripts
+RUN chmod +x install.sh
 RUN ./install.sh
 
 # Set up build environment
