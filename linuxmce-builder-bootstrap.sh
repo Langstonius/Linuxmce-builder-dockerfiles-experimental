@@ -71,7 +71,7 @@ print_info "Added $USER to the docker group. You may need to log out and back in
 print_info "Setting up project structure..."
 
 # Create required directories
-mkdir -p $PROJECT_DIR/{output,configs,source,mysql,lmce-build}
+mkdir -p $PROJECT_DIR/{output,configs,source,mysql}
 
 # Create Dockerfile
 print_info "Creating Dockerfile..."
@@ -123,20 +123,20 @@ RUN mkdir -p /var/run/mysqld && \
 # Set up working directory
 WORKDIR /root
 
-# Clone No Hard Code Git 
-RUN git clone https://github.com/Langstonius/Ubuntu_Helpers_NoHardcode.git
-
-RUN ln -s /root/Ubuntu_Helpers_NoHardcode /root/buildscripts
-
 # Define volume for build outputs
 VOLUME ["/usr/local/lmce-build/output"]
 
-RUN mkdir -p /etc/lmce-build
-RUN ls -lha /etc/lmce-build
+#setup sparse checkout
+RUN mkdir -p /root/buildscripts
+WORKDIR /root/buildscripts
+RUN git init
+RUN git remote add origin https://github.com/Langstonius/LinuxMCE.git
+RUN git config core.sparseCheckout true
+RUN echo "src/Ubuntu_Helpers_NoHardcode" >> .git/info/sparse-checkout
+RUN git pull origin master
 
-RUN git clone https://github.com/Langstonius/LinuxMCE.git
 # Set up build configuration
-COPY configs/builder.custom.conf /root/buildscripts/conf-files/ubuntu-amd64/
+COPY configs/builder.custom.conf /root/buildscripts/conf-files/jammy-amd64/
 
 # Install build helpers
 WORKDIR /root/buildscripts
@@ -251,7 +251,7 @@ services:
       # Optional: Mount custom configuration
       - ./configs:/usr/local/lmce-build/configs:ro
       # Required to save or inject key
-      - ${PWD}/lmce-build:/etc/lmce-build
+     # - ${PWD}/lmce-build:/etc/lmce-build
     environment:
       # Example environment variables that can be used to configure the build
       - BUILD_TYPE=release
