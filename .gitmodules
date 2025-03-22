@@ -1,0 +1,3 @@
+[submodule "Ubuntu_Helpers_NoHardcode"]
+	path = Ubuntu_Helpers_NoHardcode
+	url = git@github.com:Langstonius/Ubuntu_Helpers_NoHardcode.git
