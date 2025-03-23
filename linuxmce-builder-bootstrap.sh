@@ -85,6 +85,9 @@ LABEL version="1.0"
 # Avoid prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Copy the APT proxy configuration file
+COPY configs/02proxy /etc/apt/apt.conf.d/
+
 # Set locale
 RUN apt-get update && apt-get install -y locales && \
     localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
@@ -126,17 +129,23 @@ WORKDIR /root
 # Define volume for build outputs
 VOLUME ["/usr/local/lmce-build/output"]
 
-#setup sparse checkout
-RUN mkdir -p /root/buildscripts
-WORKDIR /root/buildscripts
-RUN git init
-RUN git remote add origin https://github.com/Langstonius/LinuxMCE.git
-RUN git config core.sparseCheckout true
-RUN echo "src/Ubuntu_Helpers_NoHardcode" >> .git/info/sparse-checkout
-RUN git pull origin master
+#setup sparse checkout - deprecated but leaving for now
+#RUN mkdir -p /root/LinuxMCE
+#WORKDIR /root/LinuxMCE
+#RUN git init
+#RUN git remote add origin https://github.com/phenigma/LinuxMCE.git
+#RUN git config core.sparseCheckout true
+#RUN echo "src/Ubuntu_Helpers_NoHardcode" >> .git/info/sparse-checkout
+#RUN git pull origin master
+
+RUN git clone git@github.com:Langstonius/Ubuntu_Helpers_NoHardcode.git
+RUN mv /root/Ubuntu_Helpers_NoHardCode /root/Ubuntu_Helpers_NoHardcode
+RUN ln -s /root/Ubuntu_Helpers_NoHardcode /root/buildscripts
 
 # Set up build configuration
-COPY configs/builder.custom.conf /root/buildscripts/conf-files/jammy-amd64/
+## FIXME -- fixed location name, needs other TLC investigated
+## this likely needs to occur later in the process but this hack works for now. - phenigma
+COPY configs/builder.custom.conf /root/buildscripts/conf-files/ubuntu-jammy-amd64/
 
 # Install build helpers
 WORKDIR /root/buildscripts
@@ -153,6 +162,7 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 # Default command if no arguments are provided
 CMD ["build"]
+#CMD ["shell"]
 EOF
 
 # Create MySQL configuration
@@ -163,11 +173,24 @@ skip-networking
 innodb_flush_log_at_trx_commit = 2
 EOF
 
+## FIXME: Add apt-proxy to docker env variables to avoid hardcode here. - phenigma
+## Create apt proxy file
+#print_info "Creating APT proxy file..."
+#cat > $PROJECT_DIR/configs/02proxy << 'EOF'
+#Acquire {
+#  HTTP::proxy "http://192.168.2.60:3142";
+#}
+#EOF
+
 # Create builder configuration
 print_info "Creating builder configuration..."
 cat > $PROJECT_DIR/configs/builder.custom.conf << 'EOF'
 # Build configuration for LinuxMCE
-# Generated on $(date)
+# Generated on $(date) #FIXME <- $(date) isn't replacing
+
+PROXY=""
+#SKIN_HOST="192.168.2.99"
+#MEDIA_HOST="192.168.2.99"
 
 # DVD build options
 do_not_build_sl_dvd="yes"
@@ -301,8 +324,8 @@ if [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
     echo ""
     echo "Environment variables:"
     echo "  UBUNTU_VERSION    Ubuntu version to use (default: 22.04)"
-    echo "  BUILD_TYPE        Build type (release or debug, default: release)"
-    echo "  SKIP_DVD_BUILD    Skip DVD build (yes or no, default: yes)"
+    echo "  BUILD_TYPE        Build type (release or debug, default: release) (debug is disabled)"
+    echo "  SKIP_DVD_BUILD    Skip DVD build (yes or no, default: yes) (dvd build is a separate process now)"
     echo "  WIN32_CREATE_FAKE Create fake Win32 binaries (yes or no, default: yes)"
     echo "  SQLCVS_HOST       SQL CVS host (default: schema.linuxmce.org)"
     echo ""
@@ -324,6 +347,8 @@ case "$1" in
         CMD="run --rm linuxmce-builder shell"
         ;;
     *)
+	## Run a shell by default (phenigma)
+        ##CMD="run --rm linuxmce-builder shell"
         # Default is to build
         CMD="up"
         ;;
