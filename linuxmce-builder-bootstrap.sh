@@ -138,19 +138,24 @@ VOLUME ["/usr/local/lmce-build/output"]
 #RUN echo "src/Ubuntu_Helpers_NoHardcode" >> .git/info/sparse-checkout
 #RUN git pull origin master
 
-RUN git clone git@github.com:Langstonius/Ubuntu_Helpers_NoHardcode.git
-RUN mv /root/Ubuntu_Helpers_NoHardCode /root/Ubuntu_Helpers_NoHardcode
-RUN ln -s /root/Ubuntu_Helpers_NoHardcode /root/buildscripts
+#RUN git clone git@github.com:Langstonius/Ubuntu_Helpers_NoHardcode.git
+#RUN mv /root/Ubuntu_Helpers_NoHardCode /root/Ubuntu_Helpers_NoHardcode
+#RUN ln -s /root/Ubuntu_Helpers_NoHardcode /root/buildscripts
 
-# Set up build configuration
-## FIXME -- fixed location name, needs other TLC investigated
-## this likely needs to occur later in the process but this hack works for now. - phenigma
-COPY configs/builder.custom.conf /root/buildscripts/conf-files/ubuntu-jammy-amd64/
+RUN git clone https://github.com/linuxmce/buildscripts.git
+RUN ln -s /root/buildscripts /root/Ubuntu_Helpers_NoHardcode
 
 # Install build helpers
 WORKDIR /root/buildscripts
 RUN chmod +x install.sh
 RUN ./install.sh
+
+# Copy builder configuration
+COPY configs/builder.custom.conf /etc/lmce-build/
+
+# Install all the build-required packages and libraries
+RUN chmod +x prepare.sh
+RUN ./prepare.sh
 
 # Set up build environment
 WORKDIR /usr/local/lmce-build
